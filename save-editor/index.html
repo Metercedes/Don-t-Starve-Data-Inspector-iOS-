@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Don't Starve: Pocket Edition — Save Editor</title>
+    <meta name="description" content="Web-based save editor for Don't Starve: Pocket Edition on iOS/iPadOS. Unlock characters, edit game world, modify player stats.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+
+        <header>
+            <div class="header-content">
+                <h1>Don't Starve <span class="accent">Save Editor</span></h1>
+                <p class="subtitle">Pocket Edition &middot; iOS / iPadOS</p>
+            </div>
+        </header>
+
+        <main>
+
+            <section id="upload-section" class="card">
+                <h2>Upload Save Files</h2>
+
+                <div class="guide-section">
+                    <p class="section-subtitle">Your save files are stored inside the Don't Starve app container. Here's how to find them:</p>
+
+                    <div class="guide-steps">
+                        <div class="guide-step">
+                            <span class="step-number">1</span>
+                            <div class="step-content">
+                                <strong>Connect your device</strong> to your Mac or PC using a USB cable.
+                            </div>
+                        </div>
+                        <div class="guide-step">
+                            <span class="step-number">2</span>
+                            <div class="step-content">
+                                <strong>Open Finder</strong> (macOS Catalina+) or <strong>iTunes</strong> (Windows / older macOS). Select your device, go to <strong>Files</strong> tab, and expand <strong>Don't Starve: Pocket Edition</strong>.
+                                <br>Alternatively, use <strong>iMazing</strong> or <strong>i-Funbox</strong> to browse the app's sandbox.
+                            </div>
+                        </div>
+                        <div class="guide-step">
+                            <span class="step-number">3</span>
+                            <div class="step-content">
+                                Navigate to the <span class="file-path">Documents/</span> folder inside the app. You'll find these files:
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="upload-grid">
+                    <div class="upload-box" id="upload-profile">
+                        <div class="upload-icon">👤</div>
+                        <h3>Profile</h3>
+                        <p class="upload-desc">XP, unlocked characters, settings</p>
+                        <span class="expected-file">profile</span>
+                        <input type="file" id="file-profile" accept="*">
+                        <label for="file-profile" class="upload-btn">Select file</label>
+                        <span class="file-status" id="status-profile">Not loaded</span>
+                    </div>
+                    <div class="upload-box" id="upload-saveindex">
+                        <div class="upload-icon">💾</div>
+                        <h3>Save Index</h3>
+                        <p class="upload-desc">Save slot metadata &amp; mode info</p>
+                        <span class="expected-file">saveindex</span>
+                        <input type="file" id="file-saveindex" accept="*">
+                        <label for="file-saveindex" class="upload-btn">Select file</label>
+                        <span class="file-status" id="status-saveindex">Not loaded</span>
+                    </div>
+                    <div class="upload-box" id="upload-survival">
+                        <div class="upload-icon">🌍</div>
+                        <h3>World Save</h3>
+                        <p class="upload-desc">Game world, entities, player position</p>
+                        <span class="expected-file">survival_1</span>
+                        <input type="file" id="file-survival" accept="*">
+                        <label for="file-survival" class="upload-btn">Select file</label>
+                        <span class="file-status" id="status-survival">Not loaded</span>
+                    </div>
+                </div>
+
+                <div class="bulk-upload">
+                    <p>Or upload all files at once:</p>
+                    <input type="file" id="file-bulk" multiple accept="*">
+                    <label for="file-bulk" class="bulk-btn">Select multiple files</label>
+                </div>
+            </section>
+
+            <nav id="editor-tabs" class="tabs hidden">
+                <button class="tab active" data-tab="profile-editor">Profile</button>
+                <button class="tab" data-tab="saveindex-editor">Save Slots</button>
+                <button class="tab" data-tab="survival-editor">Game World</button>
+                <button class="tab" data-tab="raw-editor">Raw Data</button>
+                <button class="tab" data-tab="console-ref">Console</button>
+            </nav>
+
+            <section id="profile-editor" class="card editor-panel hidden">
+                <h2>Profile Editor</h2>
+                <p class="info-text">Modify your player profile — XP, unlocked characters, and game settings. Changes are saved to a new file you'll put back on your device.</p>
+
+                <div class="editor-group">
+                    <h3>Experience Points</h3>
+                    <div class="field-row">
+                        <label for="profile-xp">XP</label>
+                        <input type="number" id="profile-xp" min="0" max="99999">
+                        <span class="field-hint" id="xp-level-hint"></span>
+                    </div>
+                    <div class="xp-presets">
+                        <button class="preset-btn" data-xp="0">0</button>
+                        <button class="preset-btn" data-xp="160">160 · Willow</button>
+                        <button class="preset-btn" data-xp="320">320 · Wolfgang</button>
+                        <button class="preset-btn" data-xp="640">640 · Wendy</button>
+                        <button class="preset-btn" data-xp="960">960 · WX-78</button>
+                        <button class="preset-btn" data-xp="1280">1280 · Wickerbottom</button>
+                        <button class="preset-btn" data-xp="1600">1600 · Woodie</button>
+                        <button class="preset-btn" data-xp="1920">1920 · Wigfrid</button>
+                    </div>
+                </div>
+
+                <div class="editor-group">
+                    <h3>Characters</h3>
+                    <p class="info-text">Click a character card to toggle their unlock. The game checks the <code>unlocked_characters</code> dictionary — all 10 non-default characters must be present to appear in the selection screen.</p>
+                    <div class="character-grid" id="character-grid"></div>
+                    <div class="action-row">
+                        <button id="unlock-all-chars" class="action-btn">Unlock All</button>
+                        <button id="lock-all-chars" class="action-btn secondary">Reset to Default</button>
+                    </div>
+                </div>
+
+                <div class="editor-group">
+                    <h3>Nightmare Throne</h3>
+                    <div class="field-row">
+                        <label for="profile-throne">Character in Throne</label>
+                        <select id="profile-throne">
+                            <option value="waxwell">Maxwell (default)</option>
+                            <option value="wilson">Wilson</option>
+                            <option value="willow">Willow</option>
+                            <option value="wolfgang">Wolfgang</option>
+                            <option value="wendy">Wendy</option>
+                            <option value="wx78">WX-78</option>
+                            <option value="wickerbottom">Wickerbottom</option>
+                            <option value="woodie">Woodie</option>
+                            <option value="wes">Wes</option>
+                            <option value="wathgrithr">Wigfrid</option>
+                            <option value="webber">Webber</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="editor-group">
+                    <h3>Settings</h3>
+                    <div class="field-grid">
+                        <div class="field-row">
+                            <label for="profile-renders">Render Quality</label>
+                            <input type="number" id="profile-renders" min="0" max="10">
+                        </div>
+                        <div class="field-row">
+                            <label for="profile-autosave">Auto-Save</label>
+                            <select id="profile-autosave">
+                                <option value="true">Enabled</option>
+                                <option value="false">Disabled</option>
+                            </select>
+                        </div>
+                        <div class="field-row">
+                            <label for="profile-starts">Game Starts</label>
+                            <input type="number" id="profile-starts" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="save-row">
+                    <button id="save-profile" class="save-btn">Download Modified Profile</button>
+                </div>
+            </section>
+
+            <section id="saveindex-editor" class="card editor-panel hidden">
+                <h2>Save Slots</h2>
+                <p class="info-text">View and edit save slot metadata — character selection, day count, and DLC settings for each slot.</p>
+                <div id="saveindex-slots"></div>
+                <div class="save-row">
+                    <button id="save-saveindex" class="save-btn">Download Modified Save Index</button>
+                </div>
+            </section>
+
+            <section id="survival-editor" class="card editor-panel hidden">
+                <h2>Game World</h2>
+                <p class="info-text">Edit player position, world metadata, and manage entities in your saved game.</p>
+
+                <div class="editor-group">
+                    <h3>Player Info</h3>
+                    <div class="field-grid">
+                        <div class="field-row">
+                            <label for="surv-day">Day</label>
+                            <input type="number" id="surv-day" min="0">
+                        </div>
+                        <div class="field-row">
+                            <label for="surv-x">Position X</label>
+                            <input type="number" id="surv-x" step="0.01">
+                        </div>
+                        <div class="field-row">
+                            <label for="surv-y">Position Y</label>
+                            <input type="number" id="surv-y" step="0.01">
+                        </div>
+                        <div class="field-row">
+                            <label for="surv-z">Position Z</label>
+                            <input type="number" id="surv-z" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="editor-group">
+                    <h3>World Metadata</h3>
+                    <div class="field-grid">
+                        <div class="field-row">
+                            <label for="surv-seed">World Seed</label>
+                            <input type="number" id="surv-seed">
+                        </div>
+                        <div class="field-row">
+                            <label for="surv-levelid">Level ID</label>
+                            <input type="text" id="surv-levelid">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="editor-group">
+                    <h3>Entity Manager</h3>
+                    <p class="info-text">Add, remove, or modify entities in your world — spawn items, resources, or creatures at specific locations.</p>
+
+                    <div class="entity-controls">
+                        <div class="field-row">
+                            <label for="entity-search">Search</label>
+                            <input type="text" id="entity-search" placeholder="Filter entities...">
+                        </div>
+                    </div>
+
+                    <div id="entity-list" class="entity-list"></div>
+
+                    <div class="add-entity-form">
+                        <h4>Add New Entity</h4>
+                        <div class="field-grid">
+                            <div class="field-row">
+                                <label for="new-entity-type">Entity Type</label>
+                                <select id="new-entity-type">
+                                    <optgroup label="Resources">
+                                        <option value="log">Log</option>
+                                        <option value="rocks">Rocks</option>
+                                        <option value="flint">Flint</option>
+                                        <option value="goldnugget">Gold Nugget</option>
+                                        <option value="cutgrass">Cut Grass</option>
+                                        <option value="twigs">Twigs</option>
+                                        <option value="boards">Boards</option>
+                                        <option value="cutstone">Cut Stone</option>
+                                        <option value="rope">Rope</option>
+                                        <option value="gears">Gears</option>
+                                    </optgroup>
+                                    <optgroup label="Food">
+                                        <option value="carrot_planted">Carrot (Planted)</option>
+                                        <option value="berrybush">Berry Bush</option>
+                                        <option value="red_mushroom">Red Mushroom</option>
+                                        <option value="green_mushroom">Green Mushroom</option>
+                                        <option value="blue_mushroom">Blue Mushroom</option>
+                                        <option value="mandrake">Mandrake</option>
+                                    </optgroup>
+                                    <optgroup label="Tools &amp; Weapons">
+                                        <option value="axe">Axe</option>
+                                        <option value="pickaxe">Pickaxe</option>
+                                        <option value="shovel">Shovel</option>
+                                        <option value="spear">Spear</option>
+                                        <option value="icestaff">Ice Staff</option>
+                                        <option value="panflute">Pan Flute</option>
+                                        <option value="trap">Trap</option>
+                                    </optgroup>
+                                    <optgroup label="Armor &amp; Clothing">
+                                        <option value="armorwood">Log Suit</option>
+                                        <option value="strawhat">Straw Hat</option>
+                                        <option value="backpack">Backpack</option>
+                                    </optgroup>
+                                    <optgroup label="Healing">
+                                        <option value="bandage">Bandage</option>
+                                        <option value="spoiled_food">Spoiled Food</option>
+                                    </optgroup>
+                                    <optgroup label="Structures">
+                                        <option value="pighouse">Pig House</option>
+                                        <option value="farmplot">Farm Plot</option>
+                                        <option value="fireflies">Fireflies</option>
+                                        <option value="resurrectionstone">Touch Stone</option>
+                                        <option value="chester_eyebone">Eye Bone (Chester)</option>
+                                    </optgroup>
+                                    <optgroup label="Nature">
+                                        <option value="sapling">Sapling</option>
+                                        <option value="grass">Grass</option>
+                                        <option value="reeds">Reeds</option>
+                                        <option value="flower">Flower</option>
+                                        <option value="evergreen_tall">Pine Tree (Tall)</option>
+                                        <option value="deciduoustree_tall">Birch Tree (Tall)</option>
+                                    </optgroup>
+                                    <optgroup label="Creatures">
+                                        <option value="beefalo">Beefalo</option>
+                                        <option value="lightninggoat">Lightning Goat</option>
+                                    </optgroup>
+                                    <optgroup label="Special">
+                                        <option value="adventure_portal">Adventure Portal</option>
+                                        <option value="wormhole">Wormhole</option>
+                                        <option value="cave_entrance">Cave Entrance</option>
+                                        <option value="statueglommer">Glommer Statue</option>
+                                        <option value="teleportato_base">Teleportato Base</option>
+                                        <option value="teleportato_ring">Teleportato Ring</option>
+                                        <option value="teleportato_crank">Teleportato Crank</option>
+                                        <option value="teleportato_box">Teleportato Box</option>
+                                        <option value="teleportato_potato">Teleportato Potato</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="field-row">
+                                <label for="new-entity-x">X Position</label>
+                                <input type="number" id="new-entity-x" step="0.01" value="0">
+                            </div>
+                            <div class="field-row">
+                                <label for="new-entity-z">Z Position</label>
+                                <input type="number" id="new-entity-z" step="0.01" value="0">
+                            </div>
+                        </div>
+                        <div class="action-row">
+                            <button id="add-entity-btn" class="action-btn">Add Entity</button>
+                            <button id="add-entity-at-player" class="action-btn secondary">Add at Player Position</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="save-row">
+                    <button id="save-survival" class="save-btn">Download Modified Save</button>
+                </div>
+            </section>
+
+            <section id="raw-editor" class="card editor-panel hidden">
+                <h2>Raw Data</h2>
+                <p class="info-text">Edit the raw decoded data directly. Profile uses JSON format, Save Index and Survival use Lua table format. Be careful — invalid syntax will corrupt your save.</p>
+
+                <div class="raw-tabs">
+                    <button class="raw-tab active" data-raw="profile">Profile (JSON)</button>
+                    <button class="raw-tab" data-raw="saveindex">Save Index (Lua)</button>
+                    <button class="raw-tab" data-raw="survival">Survival (Lua)</button>
+                </div>
+
+                <textarea id="raw-textarea" spellcheck="false" placeholder="Load a file to see its raw data here..."></textarea>
+
+                <div class="save-row">
+                    <button id="apply-raw" class="action-btn">Apply Changes</button>
+                    <button id="save-raw" class="save-btn">Download Current File</button>
+                </div>
+            </section>
+
+            <section id="console-ref" class="card editor-panel hidden">
+                <h2>Console Commands</h2>
+                <p class="info-text">Enable the in-game console by setting <code>ENABLECONSOLE = true</code> in <code>settings.ini</code>. On iOS, access it by tapping with 4 fingers simultaneously. Click any command to copy it.</p>
+
+                <div class="console-section">
+                    <h3>Player Stats</h3>
+                    <div class="command-list">
+                        <div class="command">
+                            <code>GetPlayer().components.health:SetCurrentHealth(200)</code>
+                            <span>Set health to 200</span>
+                        </div>
+                        <div class="command">
+                            <code>GetPlayer().components.health:SetMaxHealth(200)</code>
+                            <span>Set max health to 200</span>
+                        </div>
+                        <div class="command">
+                            <code>GetPlayer().components.sanity:SetCurrent(200)</code>
+                            <span>Set sanity to 200</span>
+                        </div>
+                        <div class="command">
+                            <code>GetPlayer().components.sanity:SetMax(200)</code>
+                            <span>Set max sanity to 200</span>
+                        </div>
+                        <div class="command">
+                            <code>GetPlayer().components.hunger:SetCurrent(150)</code>
+                            <span>Set hunger to 150</span>
+                        </div>
+                        <div class="command">
+                            <code>GetPlayer().components.hunger:SetMax(150)</code>
+                            <span>Set max hunger to 150</span>
+                        </div>
+                        <div class="command">
+                            <code>GetPlayer().components.health:SetInvincible(true)</code>
+                            <span>God mode (invincible)</span>
+                        </div>
+                        <div class="command">
+                            <code>GetPlayer().components.hunger:Pause(true)</code>
+                            <span>Stop hunger from draining</span>
+                        </div>
+                        <div class="command">
+                            <code>GetPlayer().components.sanity:SetSanityMode(0)</code>
+                            <span>Disable sanity drain</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="console-section">
+                    <h3>Spawn Items</h3>
+                    <div class="command-list">
+                        <div class="command">
+                            <code>c_give("prefab_name", quantity)</code>
+                            <span>Give item to player</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("goldnugget", 20)</code>
+                            <span>Give 20 gold nuggets</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("meat", 10)</code>
+                            <span>Give 10 meat</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("log", 40)</code>
+                            <span>Give 40 logs</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("rocks", 40)</code>
+                            <span>Give 40 rocks</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("cutgrass", 40)</code>
+                            <span>Give 40 cut grass</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("twigs", 40)</code>
+                            <span>Give 40 twigs</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("flint", 40)</code>
+                            <span>Give 40 flint</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("gears", 10)</code>
+                            <span>Give 10 gears</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("nightmarefuel", 20)</code>
+                            <span>Give 20 nightmare fuel</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("purplegem", 5)</code>
+                            <span>Give 5 purple gems</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("redgem", 5)</code>
+                            <span>Give 5 red gems</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("bluegem", 5)</code>
+                            <span>Give 5 blue gems</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="console-section">
+                    <h3>Spawn Equipment</h3>
+                    <div class="command-list">
+                        <div class="command">
+                            <code>c_give("armorwood")</code>
+                            <span>Log Suit</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("footballhat")</code>
+                            <span>Football Helmet</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("nightsword")</code>
+                            <span>Dark Sword</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("nightmaresword")</code>
+                            <span>Night Sword</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("armormarble")</code>
+                            <span>Marble Suit</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("icestaff")</code>
+                            <span>Ice Staff</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("firestaff")</code>
+                            <span>Fire Staff</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("panflute")</code>
+                            <span>Pan Flute</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("backpack")</code>
+                            <span>Backpack</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("krampus_sack")</code>
+                            <span>Krampus Sack</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("eyebrellahat")</code>
+                            <span>Eyebrella</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("armorslurper")</code>
+                            <span>Belt of Hunger</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="console-section">
+                    <h3>Spawn Food</h3>
+                    <div class="command-list">
+                        <div class="command">
+                            <code>c_give("meatballs", 5)</code>
+                            <span>Meatballs</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("baconeggs", 5)</code>
+                            <span>Bacon and Eggs</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("dragonpie", 5)</code>
+                            <span>Dragonpie</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("butterflymuffin", 5)</code>
+                            <span>Butter Muffin</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("taffy", 5)</code>
+                            <span>Taffy (sanity food)</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("honeynuggets", 5)</code>
+                            <span>Honey Nuggets</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("pierogi", 5)</code>
+                            <span>Pierogi</span>
+                        </div>
+                        <div class="command">
+                            <code>c_give("mandrakesoup", 1)</code>
+                            <span>Mandrake Soup</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="console-section">
+                    <h3>World &amp; Misc</h3>
+                    <div class="command-list">
+                        <div class="command">
+                            <code>c_spawn("prefab_name", quantity)</code>
+                            <span>Spawn entity near player</span>
+                        </div>
+                        <div class="command">
+                            <code>c_spawn("beefalo", 5)</code>
+                            <span>Spawn 5 beefalo near you</span>
+                        </div>
+                        <div class="command">
+                            <code>c_spawn("pigman", 3)</code>
+                            <span>Spawn 3 pigs near you</span>
+                        </div>
+                        <div class="command">
+                            <code>GetClock():MakeNextDay()</code>
+                            <span>Skip to next day</span>
+                        </div>
+                        <div class="command">
+                            <code>GetSeasonManager():StartSummer()</code>
+                            <span>Force summer</span>
+                        </div>
+                        <div class="command">
+                            <code>GetSeasonManager():StartWinter()</code>
+                            <span>Force winter</span>
+                        </div>
+                        <div class="command">
+                            <code>GetSeasonManager():StartSpring()</code>
+                            <span>Force spring (RoG)</span>
+                        </div>
+                        <div class="command">
+                            <code>GetSeasonManager():StartAutumn()</code>
+                            <span>Force autumn (RoG)</span>
+                        </div>
+                        <div class="command">
+                            <code>GetWorld().minimap.MiniMap:ShowArea(0,0,0,10000)</code>
+                            <span>Reveal entire map</span>
+                        </div>
+                        <div class="command">
+                            <code>c_godmode()</code>
+                            <span>Toggle god mode</span>
+                        </div>
+                        <div class="command">
+                            <code>c_supergodmode()</code>
+                            <span>God mode + no hunger drain</span>
+                        </div>
+                        <div class="command">
+                            <code>c_speed(4)</code>
+                            <span>Set game speed (1=normal)</span>
+                        </div>
+                        <div class="command">
+                            <code>c_save()</code>
+                            <span>Force save game</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="console-section">
+                    <h3>Character Unlock Commands</h3>
+                    <div class="command-list">
+                        <div class="command">
+                            <code>GetPlayer().profile:UnlockCharacter("wes")</code>
+                            <span>Unlock Wes</span>
+                        </div>
+                        <div class="command">
+                            <code>GetPlayer().profile:UnlockCharacter("waxwell")</code>
+                            <span>Unlock Maxwell</span>
+                        </div>
+                        <div class="command">
+                            <code>GetPlayer().profile:UnlockCharacter("webber")</code>
+                            <span>Unlock Webber (RoG)</span>
+                        </div>
+                        <div class="command">
+                            <code>GetPlayer().profile:UnlockCharacter("wathgrithr")</code>
+                            <span>Unlock Wigfrid (RoG)</span>
+                        </div>
+                        <div class="command">
+                            <code>GetPlayer().profile:Save()</code>
+                            <span>Save profile after changes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="console-section">
+                    <h3>Prefab Reference</h3>
+                    <div class="prefab-grid" id="prefab-grid"></div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer>
+            <p>Don't Starve: Pocket Edition Save Editor &middot; iOS / iPadOS v1.47</p>
+            <p class="disclaimer">Not affiliated with Klei Entertainment. Use at your own risk. Always back up your save files before editing.</p>
+        </footer>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="pako.min.js"></script>
+    <script src="klei-codec.js"></script>
+    <script src="lua-parser.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
